@@ -30,7 +30,7 @@ func (c *UsersController) URLMapping() {
 // @Param	body		body 	models.Users	true		"body for Users content"
 // @Success 201 {int} models.Users
 // @Failure 403 body is empty
-// @router / [post]
+// @router /user [post]
 func (c *UsersController) Post() {
 	var v models.Users
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
@@ -49,7 +49,7 @@ func (c *UsersController) Post() {
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.Users
 // @Failure 403 :id is empty
-// @router /:id [get]
+// @router /user/:id [get]
 func (c *UsersController) GetOne() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
@@ -73,7 +73,7 @@ func (c *UsersController) GetOne() {
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.Users
 // @Failure 403
-// @router / [get]
+// @router /user [get]
 func (c *UsersController) GetAll() {
 	var fields []string
 	var sortby []string
@@ -132,7 +132,7 @@ func (c *UsersController) GetAll() {
 // @Param	body		body 	models.Users	true		"body for Users content"
 // @Success 200 {object} models.Users
 // @Failure 403 :id is not int
-// @router /:id [put]
+// @router /user/:id [put]
 func (c *UsersController) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
@@ -152,7 +152,7 @@ func (c *UsersController) Put() {
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
-// @router /:id [delete]
+// @router /user/:id [delete]
 func (c *UsersController) Delete() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)

@@ -11,7 +11,7 @@ import (
 
 type Orders struct {
 	Id            int64  `orm:"auto"`
-	DeviceCode    string `orm:"size(100:'')"`
+	DeviceCode    string `orm:"size(100)"`
 	PayStatus     bool
 	Certificate   string `orm:"type(longtext)"`
 	LatestReceipt string `orm:"type(longtext)"`

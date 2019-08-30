@@ -11,9 +11,9 @@ import (
 
 type Users struct {
 	Id                    int64  `orm:"auto"`
-	DeviceCode            string `orm:"size(100:'')"`
+	DeviceCode            string `orm:"size(100)"`
 	VipExpirationTime     uint64
-	OriginalTransactionId string `orm:"size(30:'')"`
+	OriginalTransactionId string `orm:"size(30)"`
 	Updated               uint64
 	Created               uint64
 }

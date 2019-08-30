@@ -11,8 +11,8 @@ import (
 
 type Settings struct {
 	Id           int64  `orm:"auto"`
-	SettingKey   string `orm:"size(255:'')"`
-	SettingValue string `orm:"size(255:'')"`
+	SettingKey   string `orm:"size(255)"`
+	SettingValue string `orm:"size(255)"`
 }
 
 func init() {
