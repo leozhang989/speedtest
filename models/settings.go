@@ -43,7 +43,7 @@ func GetSettingsById(id int64) (v *Settings, err error) {
 func GetSettingsBySettingKey(setting_key string) (v *Settings, err error) {
 	o := orm.NewOrm()
 	v = &Settings{SettingKey: setting_key}
-	if err = o.QueryTable(new(Settings)).Filter("SettingKey", setting_key).RelatedSel().One(v); err == nil {
+	if err = o.QueryTable(new(Settings)).Filter("SettingKey", setting_key).RelatedSel().One(v, "setting_value"); err == nil {
 		return v, nil
 	}
 	return nil, err

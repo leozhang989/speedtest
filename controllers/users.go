@@ -15,6 +15,12 @@ type UsersController struct {
 	beego.Controller
 }
 
+type Result struct {
+	Code int
+	Data map[string]string
+	Msg string
+}
+
 // URLMapping ...
 func (c *UsersController) URLMapping() {
 	c.Mapping("Post", c.Post)
@@ -30,7 +36,7 @@ func (c *UsersController) URLMapping() {
 // @Param	body		body 	models.Users	true		"body for Users content"
 // @Success 201 {int} models.Users
 // @Failure 403 body is empty
-// @router /user [post]
+// @router /users [post]
 func (c *UsersController) Post() {
 	var v models.Users
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
@@ -45,19 +51,30 @@ func (c *UsersController) Post() {
 
 // GetOne ...
 // @Title Get One
-// @Description get Users by id
-// @Param	id		path 	string	true		"The key for staticblock"
+// @Description get Users by deviceCode
+// @Param	deviceCode		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.Users
-// @Failure 403 :id is empty
-// @router /user/:id [get]
+// @Failure 403 :deviceCode is empty
+// @router /users/:deviceCode [get]
 func (c *UsersController) GetOne() {
-	idStr := c.Ctx.Input.Param(":id")
-	id, _ := strconv.ParseInt(idStr, 0, 64)
-	v, err := models.GetUsersById(id)
+	//idStr := c.Ctx.Input.Param(":id")
+	//id, _ := strconv.ParseInt(idStr, 0, 64)
+	deviceCodeStr := c.Ctx.Input.Param(":deviceCode")
+	v, err := models.GetUsersByDeviceCode(deviceCodeStr)
+	res := new(Result)
 	if err != nil {
-		c.Data["json"] = err.Error()
+		//c.Data["json"] = err.Error()
+		res.Code = 202
+		res.Data = make(map[string]string)
+		res.Msg = ""
+		c.Data["json"] = res
 	} else {
-		c.Data["json"] = v
+		settings, _ := models.GetSettingsBySettingKey("download_url")
+		returnRes := map[string]string{"VipExpirationTime": strconv.FormatUint(v.VipExpirationTime,10), "downloadUrl": settings.SettingValue}
+		res.Code = 200
+		res.Data = returnRes
+		res.Msg = ""
+		c.Data["json"] = res
 	}
 	c.ServeJSON()
 }
@@ -73,7 +90,7 @@ func (c *UsersController) GetOne() {
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.Users
 // @Failure 403
-// @router /user [get]
+// @router /users [get]
 func (c *UsersController) GetAll() {
 	var fields []string
 	var sortby []string
@@ -132,7 +149,7 @@ func (c *UsersController) GetAll() {
 // @Param	body		body 	models.Users	true		"body for Users content"
 // @Success 200 {object} models.Users
 // @Failure 403 :id is not int
-// @router /user/:id [put]
+// @router /users/:id [put]
 func (c *UsersController) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
@@ -152,7 +169,7 @@ func (c *UsersController) Put() {
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
-// @router /user/:id [delete]
+// @router /users/:id [delete]
 func (c *UsersController) Delete() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)

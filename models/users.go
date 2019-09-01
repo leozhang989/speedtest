@@ -41,6 +41,17 @@ func GetUsersById(id int64) (v *Users, err error) {
 	return nil, err
 }
 
+// GetUsersByDeviceCode retrieves Users by deviceCode. Returns error if
+// Id doesn't exist
+func GetUsersByDeviceCode(deviceCode string)(v *Users, err error)  {
+	o := orm.NewOrm()
+	v = &Users{DeviceCode: deviceCode}
+	if err = o.QueryTable(new(Users)).Filter("device_code", deviceCode).RelatedSel().One(v); err == nil {
+		return v, nil
+	}
+	return nil, err
+}
+
 // GetAllUsers retrieves all Users matches certain condition. Returns empty list if
 // no records exist
 func GetAllUsers(query map[string]string, fields []string, sortby []string, order []string,
