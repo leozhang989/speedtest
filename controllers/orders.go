@@ -15,6 +15,12 @@ type OrdersController struct {
 	beego.Controller
 }
 
+type Result struct {
+	Code int
+	Data map[string]string
+	Msg string
+}
+
 // URLMapping ...
 func (c *OrdersController) URLMapping() {
 	c.Mapping("Post", c.Post)
@@ -30,10 +36,32 @@ func (c *OrdersController) URLMapping() {
 // @Param	body		body 	models.Orders	true		"body for Orders content"
 // @Success 201 {int} models.Orders
 // @Failure 403 body is empty
-// @router / [post]
+// @router /orders [post]
 func (c *OrdersController) Post() {
 	var v models.Orders
+	res := new(Result)
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
+	deviceCode := v.DeviceCode
+	user,err := models.GetUsersByDeviceCode(deviceCode)
+	if err != nil {
+		res.Code = 202
+		res.Data = make(map[string]string)
+		res.Msg = "empty user"
+		c.Data["json"] = res
+	}
+
+	appPasswordRes, _ := models.GetSettingsBySettingKey("appPassword")
+	isSandBoxRes, _ := models.GetSettingsBySettingKey("isSandBox")
+	bundleIdRes, _ := models.GetSettingsBySettingKey("bundleId")
+
+
+	appleVerifyHost := "https://buy.itunes.apple.com/verifyReceipt"
+	if intSandbox,_ := strconv.Atoi(isSandBoxRes.SettingValue); intSandbox == 1 {
+		appleVerifyHost := "https://sandbox.itunes.apple.com/verifyReceipt";
+	}
+
+	
+
 	if _, err := models.AddOrders(&v); err == nil {
 		c.Ctx.Output.SetStatus(201)
 		c.Data["json"] = v
@@ -49,7 +77,7 @@ func (c *OrdersController) Post() {
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.Orders
 // @Failure 403 :id is empty
-// @router /:id [get]
+// @router /orders/:id [get]
 func (c *OrdersController) GetOne() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
@@ -73,7 +101,7 @@ func (c *OrdersController) GetOne() {
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.Orders
 // @Failure 403
-// @router / [get]
+// @router /orders [get]
 func (c *OrdersController) GetAll() {
 	var fields []string
 	var sortby []string
@@ -132,7 +160,7 @@ func (c *OrdersController) GetAll() {
 // @Param	body		body 	models.Orders	true		"body for Orders content"
 // @Success 200 {object} models.Orders
 // @Failure 403 :id is not int
-// @router /:id [put]
+// @router /orders/:id [put]
 func (c *OrdersController) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
@@ -152,7 +180,7 @@ func (c *OrdersController) Put() {
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
-// @router /:id [delete]
+// @router /orders/:id [delete]
 func (c *OrdersController) Delete() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)

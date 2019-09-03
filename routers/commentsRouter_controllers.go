@@ -10,7 +10,7 @@ func init() {
     beego.GlobalControllerRouter["speedtest/controllers:OrdersController"] = append(beego.GlobalControllerRouter["speedtest/controllers:OrdersController"],
         beego.ControllerComments{
             Method: "Post",
-            Router: `/`,
+            Router: `/orders`,
             AllowHTTPMethods: []string{"post"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -19,7 +19,7 @@ func init() {
     beego.GlobalControllerRouter["speedtest/controllers:OrdersController"] = append(beego.GlobalControllerRouter["speedtest/controllers:OrdersController"],
         beego.ControllerComments{
             Method: "GetAll",
-            Router: `/`,
+            Router: `/orders`,
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -28,7 +28,7 @@ func init() {
     beego.GlobalControllerRouter["speedtest/controllers:OrdersController"] = append(beego.GlobalControllerRouter["speedtest/controllers:OrdersController"],
         beego.ControllerComments{
             Method: "GetOne",
-            Router: `/:id`,
+            Router: `/orders/:id`,
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -37,7 +37,7 @@ func init() {
     beego.GlobalControllerRouter["speedtest/controllers:OrdersController"] = append(beego.GlobalControllerRouter["speedtest/controllers:OrdersController"],
         beego.ControllerComments{
             Method: "Put",
-            Router: `/:id`,
+            Router: `/orders/:id`,
             AllowHTTPMethods: []string{"put"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -46,7 +46,7 @@ func init() {
     beego.GlobalControllerRouter["speedtest/controllers:OrdersController"] = append(beego.GlobalControllerRouter["speedtest/controllers:OrdersController"],
         beego.ControllerComments{
             Method: "Delete",
-            Router: `/:id`,
+            Router: `/orders/:id`,
             AllowHTTPMethods: []string{"delete"},
             MethodParams: param.Make(),
             Filters: nil,
