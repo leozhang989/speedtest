@@ -62,13 +62,15 @@ func (c *UsersController) GetOne() {
 	res := new(Result)
 	if err != nil {
 		//c.Data["json"] = err.Error()
+		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
 		res.Data = make(map[string]string)
-		res.Msg = ""
+		res.Msg = "login failed"
 		c.Data["json"] = res
 	} else {
 		settings, _ := models.GetSettingsBySettingKey("download_url")
 		returnRes := map[string]string{"VipExpirationTime": strconv.FormatUint(v.VipExpirationTime,10), "downloadUrl": settings.SettingValue}
+		c.Ctx.Output.SetStatus(200)
 		res.Code = 200
 		res.Data = returnRes
 		res.Msg = ""

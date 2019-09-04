@@ -1,11 +1,16 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/astaxie/beego/orm"
+	"io/ioutil"
+	"net/http"
 	"speedtest/models"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 )
@@ -15,11 +20,35 @@ type OrdersController struct {
 	beego.Controller
 }
 
-type Result struct {
+type OrdersResult struct {
 	Code int
 	Data map[string]string
 	Msg string
 }
+
+//苹果内购返回内容解析-------
+type In_app struct {
+	Product_id string
+}
+
+type Receipt struct {
+	Bundle_id string
+	In_app []In_app
+}
+
+type Latest_receipt_info struct {
+	Original_transaction_id string
+	Expires_date_ms string
+}
+
+type AppleResult struct {
+	Status int
+	Environment string
+	Latest_receipt_info []Latest_receipt_info
+	Receipt Receipt
+	Latest_receipt string
+}
+//苹果内购返回内容解析-------
 
 // URLMapping ...
 func (c *OrdersController) URLMapping() {
@@ -39,35 +68,131 @@ func (c *OrdersController) URLMapping() {
 // @router /orders [post]
 func (c *OrdersController) Post() {
 	var v models.Orders
-	res := new(Result)
+	res := new(OrdersResult)
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	deviceCode := v.DeviceCode
-	user,err := models.GetUsersByDeviceCode(deviceCode)
-	if err != nil {
+	if len(v.DeviceCode) == 0 || len(v.Certificate) == 0 {
+		c.Ctx.Output.SetStatus(202)
+		res.Code = 202
+		res.Data = make(map[string]string)
+		res.Msg = "wrong params"
+		c.Data["json"] = res
+		c.ServeJSON()
+		panic("")
+	}
+	user,err := models.GetUsersByDeviceCode(v.DeviceCode)
+	if err != nil || user == nil {
+		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
 		res.Data = make(map[string]string)
 		res.Msg = "empty user"
 		c.Data["json"] = res
+		c.ServeJSON()
+		panic("")
 	}
-
-	appPasswordRes, _ := models.GetSettingsBySettingKey("appPassword")
 	isSandBoxRes, _ := models.GetSettingsBySettingKey("isSandBox")
+	appPasswordRes, _ := models.GetSettingsBySettingKey("appPassword")
 	bundleIdRes, _ := models.GetSettingsBySettingKey("bundleId")
 
-
+	appleParams := `{"receipt-data":"` + v.Certificate + `", "password":"` + appPasswordRes.SettingValue + `"}`
 	appleVerifyHost := "https://buy.itunes.apple.com/verifyReceipt"
 	if intSandbox,_ := strconv.Atoi(isSandBoxRes.SettingValue); intSandbox == 1 {
-		appleVerifyHost := "https://sandbox.itunes.apple.com/verifyReceipt";
+		appleVerifyHost = "https://sandbox.itunes.apple.com/verifyReceipt";
 	}
 
-	
-
-	if _, err := models.AddOrders(&v); err == nil {
-		c.Ctx.Output.SetStatus(201)
-		c.Data["json"] = v
-	} else {
-		c.Data["json"] = err.Error()
+	appleResponseData,err := httpPostJson(appleParams, appleVerifyHost)
+	//fmt.Println(string(appleResponseData))
+	if err != nil {
+		c.Ctx.Output.SetStatus(202)
+		res.Code = 202
+		res.Data = make(map[string]string)
+		res.Msg = "get result from apple error"
+		c.Data["json"] = res
+		c.ServeJSON()
+		panic("")
 	}
+	var appleResponse AppleResult
+	json.Unmarshal(appleResponseData, &appleResponse)
+	//fmt.Println(appleResponse)
+
+	switch {
+	case appleResponse.Status == 21007:
+		appleResponseData,err = httpPostJson(appleParams, "https://sandbox.itunes.apple.com/verifyReceipt")
+
+	case appleResponse.Status == 21008:
+		appleResponseData,err = httpPostJson(appleParams, "https://buy.itunes.apple.com/verifyReceipt")
+
+	case appleResponse.Status >= 21100 && appleResponse.Status <=21199:
+		appleResponseData,err = httpPostJson(appleParams, appleVerifyHost)
+	}
+
+	products := []string{"com.speed.1month", "com.speed.1year"}
+	if appleResponse.Status == 0 {
+		in_product_flag := false
+		for _,v := range products{
+			if v == appleResponse.Receipt.In_app[0].Product_id{
+				in_product_flag = true
+			}
+		}
+		if len(appleResponse.Receipt.Bundle_id) != 0 && appleResponse.Receipt.Bundle_id == bundleIdRes.SettingValue && len(appleResponse.Receipt.In_app) != 0 && in_product_flag {
+			receiptInfoCount := len(appleResponse.Latest_receipt_info)
+			if receiptInfoCount != 0 {
+				lastestOrder := appleResponse.Latest_receipt_info[receiptInfoCount - 1]
+				originalTransactionId := lastestOrder.Original_transaction_id
+				userInfo,_ := models.GetUsersByOtid(originalTransactionId)
+				if userInfo == nil {
+					now := time.Now().Unix()
+					//if string(now * 1000) > lastestOrder.Expires_date_ms {
+					//	c.Ctx.Output.SetStatus(202)
+					//	res.Code = 202
+					//	res.Data = make(map[string]string)
+					//	res.Msg = "续订已过期，请重新购买"
+					//	c.Data["json"] = res
+					//	c.ServeJSON()
+					//	panic("")
+					//}
+					//不存在时则创建新的原始订单记录 存储在 orders 表中
+					o := orm.NewOrm()
+					ormerr := o.Begin()
+					v.Created = uint64(now)
+					v.Updated = uint64(now)
+					v.PayStatus = true
+					//续订成功时，会员原剩余时长保存，续订结束时继续使用
+					_, doerrs := models.AddOrders(&v)
+
+					//更新会员到期时间
+					expiresDateS, _ := strconv.ParseUint(lastestOrder.Expires_date_ms[:len(lastestOrder.Expires_date_ms)-3], 10, 64)
+					user.VipExpirationTime = expiresDateS
+					user.OriginalTransactionId = originalTransactionId
+					doerrs = models.UpdateUsersById(user)
+
+					if doerrs != nil || ormerr != nil {
+						ormerr = o.Rollback()
+					}else {
+						ormerr = o.Commit()
+					}
+				}else {
+					expiresDateS, _ := strconv.ParseUint(lastestOrder.Expires_date_ms[:len(lastestOrder.Expires_date_ms)-3], 10, 64)
+					user.VipExpirationTime = expiresDateS
+					models.UpdateUsersById(user)
+				}
+				//更新最新凭证
+				v.LatestReceipt = appleResponse.Latest_receipt
+				models.UpdateOrdersById(&v)
+				c.Ctx.Output.SetStatus(200)
+				res.Code = 200
+				res.Data = make(map[string]string)
+				res.Msg = "success"
+				c.Data["json"] = res
+				c.ServeJSON()
+			}
+		}
+	}
+
+	c.Ctx.Output.SetStatus(202)
+	res.Code = 202
+	res.Data = make(map[string]string)
+	res.Msg = "支付失败"
+	c.Data["json"] = res
 	c.ServeJSON()
 }
 
@@ -190,4 +315,26 @@ func (c *OrdersController) Delete() {
 		c.Data["json"] = err.Error()
 	}
 	c.ServeJSON()
+}
+
+func httpPostJson(requestJsonString string, requestUrl string) ([]byte, error) {
+	jsonByteStr :=[]byte(requestJsonString)
+	req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(jsonByteStr))
+	if err != nil {
+		return nil,errors.New("request error")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil,errors.New("request error")
+	}
+	defer resp.Body.Close()
+
+	//statuscode := resp.StatusCode
+	//header := resp.Header
+	body,_ := ioutil.ReadAll(resp.Body)
+	//response := map[string]string{"code":strconv.Itoa(statuscode),"body":string(body[:])}
+	return body,nil
 }

@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "speedtest/routers"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	_ "github.com/go-sql-driver/mysql"
+	_ "speedtest/routers"
 )
 
 func main() {

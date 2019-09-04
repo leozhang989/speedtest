@@ -52,6 +52,17 @@ func GetUsersByDeviceCode(deviceCode string)(v *Users, err error)  {
 	return nil, err
 }
 
+// GetUsersByOtid retrieves Users by deviceCode. Returns error if
+// Id doesn't exist
+func GetUsersByOtid(originalTransactionId string)(v *Users, err error)  {
+	o := orm.NewOrm()
+	v = &Users{OriginalTransactionId: originalTransactionId}
+	if err = o.QueryTable(new(Users)).Filter("original_transaction_id", originalTransactionId).RelatedSel().One(v); err == nil {
+		return v, nil
+	}
+	return nil, err
+}
+
 // GetAllUsers retrieves all Users matches certain condition. Returns empty list if
 // no records exist
 func GetAllUsers(query map[string]string, fields []string, sortby []string, order []string,
