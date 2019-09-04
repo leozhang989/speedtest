@@ -141,15 +141,15 @@ func (c *OrdersController) Post() {
 				userInfo,_ := models.GetUsersByOtid(originalTransactionId)
 				if userInfo == nil {
 					now := time.Now().Unix()
-					//if string(now * 1000) > lastestOrder.Expires_date_ms {
-					//	c.Ctx.Output.SetStatus(202)
-					//	res.Code = 202
-					//	res.Data = make(map[string]string)
-					//	res.Msg = "续订已过期，请重新购买"
-					//	c.Data["json"] = res
-					//	c.ServeJSON()
-					//	panic("")
-					//}
+					if string(now * 1000) > lastestOrder.Expires_date_ms {
+						c.Ctx.Output.SetStatus(202)
+						res.Code = 202
+						res.Data = make(map[string]string)
+						res.Msg = "续订已过期，请重新购买"
+						c.Data["json"] = res
+						c.ServeJSON()
+						panic("")
+					}
 					//不存在时则创建新的原始订单记录 存储在 orders 表中
 					o := orm.NewOrm()
 					ormerr := o.Begin()
