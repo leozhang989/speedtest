@@ -3,7 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"speedtest/models"
-	"strconv"
+	"time"
 
 	"github.com/astaxie/beego"
 )
@@ -60,22 +60,41 @@ func (c *UsersController) GetOne() {
 	deviceCodeStr := c.Ctx.Input.Param(":deviceCode")
 	v, err := models.GetUsersByDeviceCode(deviceCodeStr)
 	res := new(Result)
-	if err != nil {
-		//c.Data["json"] = err.Error()
-		c.Ctx.Output.SetStatus(202)
-		res.Code = 202
-		res.Data = make(map[string]string)
-		res.Msg = "login failed"
-		c.Data["json"] = res
-	} else {
-		settings, _ := models.GetSettingsBySettingKey("download_url")
-		returnRes := map[string]string{"VipExpirationTime": strconv.FormatUint(v.VipExpirationTime,10), "downloadUrl": settings.SettingValue}
-		c.Ctx.Output.SetStatus(200)
-		res.Code = 200
-		res.Data = returnRes
-		res.Msg = ""
-		c.Data["json"] = res
+	settings, seterr := models.GetSettingsBySettingKey("downloadUrl")
+	downloadUrl := ""
+	if seterr == nil {
+		downloadUrl = settings.SettingValue
 	}
+	now := time.Now().Unix()
+	var vipetime string = "已过期"
+	if err != nil {
+		//新用户创建
+		var u models.Users
+		u.DeviceCode = deviceCodeStr
+		u.VipExpirationTime = uint64(now)
+		u.OriginalTransactionId = ""
+		u.Updated = uint64(now)
+		u.Created = uint64(now)
+		if _, err := models.AddUsers(&u);err != nil {
+			//c.Data["json"] = err.Error()
+			c.Ctx.Output.SetStatus(202)
+			res.Code = 202
+			res.Data = make(map[string]string)
+			res.Msg = "login failed"
+			c.Data["json"] = res
+			c.ServeJSON()
+		}
+		vipetime = "已过期"
+	} else {
+		//用时间模板  格式化时间戳  时间转化为string，layout必须为 "2006-01-02 15:04:05"
+		vipetime = time.Unix(int64(v.VipExpirationTime), 0).Format("2006-01-02 15:04:05")
+	}
+	returnRes := map[string]string{"VipExpirationTime": vipetime, "downloadUrl": downloadUrl}
+	c.Ctx.Output.SetStatus(200)
+	res.Code = 200
+	res.Data = returnRes
+	res.Msg = ""
+	c.Data["json"] = res
 	c.ServeJSON()
 }
 

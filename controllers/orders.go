@@ -84,7 +84,7 @@ func (c *OrdersController) Post() {
 		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
 		res.Data = make(map[string]string)
-		res.Msg = "empty user"
+		res.Msg = "用户信息获取失败，请退出APP重试"
 		c.Data["json"] = res
 		c.ServeJSON()
 		panic("")
@@ -121,7 +121,7 @@ func (c *OrdersController) Post() {
 	case appleResponse.Status == 21008:
 		appleResponseData,err = httpPostJson(appleParams, "https://buy.itunes.apple.com/verifyReceipt")
 
-	case appleResponse.Status >= 21100 && appleResponse.Status <=21199:
+	case appleResponse.Status >= 21100 && appleResponse.Status <= 21199:
 		appleResponseData,err = httpPostJson(appleParams, appleVerifyHost)
 	}
 
@@ -138,52 +138,59 @@ func (c *OrdersController) Post() {
 			if receiptInfoCount != 0 {
 				lastestOrder := appleResponse.Latest_receipt_info[receiptInfoCount - 1]
 				originalTransactionId := lastestOrder.Original_transaction_id
-				userInfo,_ := models.GetUsersByOtid(originalTransactionId)
-				if userInfo == nil {
-					now := time.Now().Unix()
-					if string(now * 1000) > lastestOrder.Expires_date_ms {
-						c.Ctx.Output.SetStatus(202)
-						res.Code = 202
-						res.Data = make(map[string]string)
-						res.Msg = "续订已过期，请重新购买"
-						c.Data["json"] = res
-						c.ServeJSON()
-						panic("")
-					}
+				userInfos, _ := models.GetUsersByOtid(originalTransactionId)
+				now := time.Now().Unix()
+				if string(now * 1000) > lastestOrder.Expires_date_ms {
+					c.Ctx.Output.SetStatus(202)
+					res.Code = 202
+					res.Data = make(map[string]string)
+					res.Msg = "续订已过期，请重新购买"
+					c.Data["json"] = res
+					c.ServeJSON()
+					panic("")
+				}
+
+				//获取orders表中是否有此设备记录
+				orderRecord, _ := models.GetOrdersByDeviceCode(v.DeviceCode)
+				o := orm.NewOrm()
+				ormerr := o.Begin()
+				var doerrs error
+				if orderRecord == nil {
 					//不存在时则创建新的原始订单记录 存储在 orders 表中
-					o := orm.NewOrm()
-					ormerr := o.Begin()
-					v.Created = uint64(now)
 					v.Updated = uint64(now)
 					v.PayStatus = true
+					v.LatestReceipt = appleResponse.Latest_receipt
+					v.Created = uint64(now)
 					//续订成功时，会员原剩余时长保存，续订结束时继续使用
-					_, doerrs := models.AddOrders(&v)
-
-					//更新会员到期时间
-					expiresDateS, _ := strconv.ParseUint(lastestOrder.Expires_date_ms[:len(lastestOrder.Expires_date_ms)-3], 10, 64)
-					user.VipExpirationTime = expiresDateS
-					user.OriginalTransactionId = originalTransactionId
-					doerrs = models.UpdateUsersById(user)
-
-					if doerrs != nil || ormerr != nil {
-						ormerr = o.Rollback()
-					}else {
-						ormerr = o.Commit()
-					}
-				}else {
-					expiresDateS, _ := strconv.ParseUint(lastestOrder.Expires_date_ms[:len(lastestOrder.Expires_date_ms)-3], 10, 64)
-					user.VipExpirationTime = expiresDateS
-					models.UpdateUsersById(user)
+					_, doerrs = models.AddOrders(&v)
+				}else{
+					orderRecord.Updated = uint64(now)
+					orderRecord.PayStatus = true
+					orderRecord.LatestReceipt = appleResponse.Latest_receipt
+					doerrs = models.UpdateOrdersById(orderRecord)
 				}
-				//更新最新凭证
-				v.LatestReceipt = appleResponse.Latest_receipt
-				models.UpdateOrdersById(&v)
-				c.Ctx.Output.SetStatus(200)
-				res.Code = 200
-				res.Data = make(map[string]string)
-				res.Msg = "success"
-				c.Data["json"] = res
-				c.ServeJSON()
+
+				//更新会员到期时间
+				expiresDateS, _ := strconv.ParseUint(lastestOrder.Expires_date_ms[:len(lastestOrder.Expires_date_ms)-3], 10, 64)
+				user.VipExpirationTime = expiresDateS
+				user.OriginalTransactionId = originalTransactionId
+				user.Updated = uint64(now)
+				doerrs = models.UpdateUsersById(user)
+				if userInfos != 0 {
+					_, doerrs = models.UpdateUsersByOtid(expiresDateS, originalTransactionId)
+				}
+
+				if doerrs != nil || ormerr != nil {
+					ormerr = o.Rollback()
+				}else {
+					ormerr = o.Commit()
+					c.Ctx.Output.SetStatus(200)
+					res.Code = 200
+					res.Data = make(map[string]string)
+					res.Msg = "success"
+					c.Data["json"] = res
+					c.ServeJSON()
+				}
 			}
 		}
 	}

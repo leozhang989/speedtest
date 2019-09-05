@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego/orm"
 )
@@ -54,13 +55,14 @@ func GetUsersByDeviceCode(deviceCode string)(v *Users, err error)  {
 
 // GetUsersByOtid retrieves Users by deviceCode. Returns error if
 // Id doesn't exist
-func GetUsersByOtid(originalTransactionId string)(v *Users, err error)  {
+func GetUsersByOtid(originalTransactionId string)(num int64, err error)  {
 	o := orm.NewOrm()
-	v = &Users{OriginalTransactionId: originalTransactionId}
-	if err = o.QueryTable(new(Users)).Filter("original_transaction_id", originalTransactionId).RelatedSel().One(v); err == nil {
-		return v, nil
+	var users []*Users
+	if num, err := o.QueryTable("users").Filter("original_transaction_id", originalTransactionId).All(&users); err == nil {
+		return num, nil
 	}
-	return nil, err
+
+	return num, err
 }
 
 // GetAllUsers retrieves all Users matches certain condition. Returns empty list if
@@ -150,6 +152,21 @@ func UpdateUsersById(m *Users) (err error) {
 		}
 	}
 	return
+}
+
+// UpdateUsers updates Users by OriginalTransactionId and returns error if
+// the record to be updated doesn't exist
+func UpdateUsersByOtid(etime uint64, originalTransactionId string) (num int64, err error) {
+	o := orm.NewOrm()
+	if etime != 0 && len(originalTransactionId) != 0 {
+		num, err := o.QueryTable("users").Filter("original_transaction_id", originalTransactionId).Update(orm.Params{
+			"vip_expiration_time": etime, "updated": uint64(time.Now().Unix()),
+		})
+		fmt.Println("Number of records updated in database:", num)
+		return num, err
+	}
+
+	return num, err
 }
 
 // DeleteUsers deletes Users by Id and returns error if

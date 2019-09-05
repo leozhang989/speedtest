@@ -42,6 +42,17 @@ func GetOrdersById(id int64) (v *Orders, err error) {
 	return nil, err
 }
 
+// GetOrdersByDeviceCode retrieves Orders by DeviceCode. Returns error if
+// Id doesn't exist
+func GetOrdersByDeviceCode(deviceCode string) (v *Orders, err error) {
+	o := orm.NewOrm()
+	v = &Orders{DeviceCode: deviceCode}
+	if err = o.QueryTable(new(Orders)).Filter("device_code", deviceCode).RelatedSel().One(v); err == nil {
+		return v, nil
+	}
+	return nil, err
+}
+
 // GetAllOrders retrieves all Orders matches certain condition. Returns empty list if
 // no records exist
 func GetAllOrders(query map[string]string, fields []string, sortby []string, order []string,
