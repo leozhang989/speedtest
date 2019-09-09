@@ -81,7 +81,7 @@ func (c *UsersController) GetOne() {
 	} else {
 		//用时间模板  格式化时间戳  时间转化为string，layout必须为 "2006-01-02 15:04:05"
 		vipetime = time.Unix(int64(v.VipExpirationTime), 0).Format("2006-01-02 15:04:05")
-		if now > int64(v.VipExpirationTime) {
+		if now < int64(v.VipExpirationTime) {
 			isvip = "1"
 		}
 	}
