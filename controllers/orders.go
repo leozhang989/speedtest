@@ -1,12 +1,8 @@
 package controllers
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"github.com/astaxie/beego/orm"
-	"io/ioutil"
-	"net/http"
 	"speedtest/models"
 	"strconv"
 	"time"
@@ -99,7 +95,7 @@ func (c *OrdersController) Post() {
 		appleVerifyHost = "https://sandbox.itunes.apple.com/verifyReceipt";
 	}
 
-	appleResponseData,err := httpPostJson(appleParams, appleVerifyHost)
+	appleResponseData,err := HttpPostJson(appleParams, appleVerifyHost)
 	//fmt.Println(string(appleResponseData))
 	if err != nil {
 		c.Ctx.Output.SetStatus(202)
@@ -116,13 +112,13 @@ func (c *OrdersController) Post() {
 
 	switch {
 	case appleResponse.Status == 21007:
-		appleResponseData,err = httpPostJson(appleParams, "https://sandbox.itunes.apple.com/verifyReceipt")
+		appleResponseData,err = HttpPostJson(appleParams, "https://sandbox.itunes.apple.com/verifyReceipt")
 
 	case appleResponse.Status == 21008:
-		appleResponseData,err = httpPostJson(appleParams, "https://buy.itunes.apple.com/verifyReceipt")
+		appleResponseData,err = HttpPostJson(appleParams, "https://buy.itunes.apple.com/verifyReceipt")
 
 	case appleResponse.Status >= 21100 && appleResponse.Status <= 21199:
-		appleResponseData,err = httpPostJson(appleParams, appleVerifyHost)
+		appleResponseData,err = HttpPostJson(appleParams, appleVerifyHost)
 	}
 
 	products := []string{"com.speed.1month", "com.speed.1year"}
@@ -251,27 +247,4 @@ func (c *OrdersController) Put() {
 // @router /orders/:id [delete]
 func (c *OrdersController) Delete() {
 
-}
-
-
-func httpPostJson(requestJsonString string, requestUrl string) ([]byte, error) {
-	jsonByteStr :=[]byte(requestJsonString)
-	req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(jsonByteStr))
-	if err != nil {
-		return nil,errors.New("request error")
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil,errors.New("request error")
-	}
-	defer resp.Body.Close()
-
-	//statuscode := resp.StatusCode
-	//header := resp.Header
-	body,_ := ioutil.ReadAll(resp.Body)
-	//response := map[string]string{"code":strconv.Itoa(statuscode),"body":string(body[:])}
-	return body,nil
 }

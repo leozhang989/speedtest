@@ -106,7 +106,10 @@ func GetAllOrders(query map[string]string, fields []string, sortby []string, ord
 
 	var l []Orders
 	qs = qs.OrderBy(sortFields...).RelatedSel()
-	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
+	if limit != 0 {
+		qs = qs.Limit(limit, offset)
+	}
+	if _, err = qs.All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
 				ml = append(ml, v)

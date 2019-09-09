@@ -15,5 +15,5 @@ func init() {
 	beego.Include(&controllers.OrdersController{})
 
 	// cron定时任务
-	beego.Router("/cron/refresh-vip", &controllers.CronController{}, "get:Refresh")
+	beego.Router("/cron/refresh-vip/:token", &controllers.CronController{}, "get:Refresh")
 }
