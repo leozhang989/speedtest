@@ -5,3 +5,5 @@ speedtest.exe
 lastupdate.tmp
 main
 /conf/app.conf
+go_build_speedtest.exe
+main.exe
