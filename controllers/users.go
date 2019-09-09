@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"speedtest/models"
 	"time"
 
@@ -36,15 +35,7 @@ func (c *UsersController) URLMapping() {
 // @Failure 403 body is empty
 // @router /users [post]
 func (c *UsersController) Post() {
-	var v models.Users
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if _, err := models.AddUsers(&v); err == nil {
-		c.Ctx.Output.SetStatus(201)
-		c.Data["json"] = v
-	} else {
-		c.Data["json"] = err.Error()
-	}
-	c.ServeJSON()
+
 }
 
 // GetOne ...
@@ -55,6 +46,7 @@ func (c *UsersController) Post() {
 // @Failure 403 :deviceCode is empty
 // @router /users/:deviceCode [get]
 func (c *UsersController) GetOne() {
+	c.EnableRender = false
 	//idStr := c.Ctx.Input.Param(":id")
 	//id, _ := strconv.ParseInt(idStr, 0, 64)
 	deviceCodeStr := c.Ctx.Input.Param(":deviceCode")
@@ -111,7 +103,7 @@ func (c *UsersController) GetOne() {
 // @Failure 403
 // @router /users [get]
 func (c *UsersController) GetAll() {
-
+	c.EnableRender = false
 }
 
 // Put ...

@@ -3,3 +3,5 @@
 /.vagrant
 speedtest.exe
 lastupdate.tmp
+main
+/conf/app.conf
