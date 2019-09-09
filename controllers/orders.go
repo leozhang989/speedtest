@@ -184,7 +184,9 @@ func (c *OrdersController) Post() {
 					ormerr = o.Commit()
 					c.Ctx.Output.SetStatus(200)
 					res.Code = 200
-					res.Data = make(map[string]string)
+					vipetime := time.Unix(int64(expiresDateS), 0).Format("2006-01-02 15:04:05")
+					dataRes := map[string]string{"IsVip":"1", "VipExpirationTime":vipetime}
+					res.Data = dataRes
 					res.Msg = "success"
 					c.Data["json"] = res
 					c.ServeJSON()
