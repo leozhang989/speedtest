@@ -89,7 +89,7 @@ func (c *UsersController) GetOne() {
 	c.Ctx.Output.SetStatus(200)
 	res.Code = 200
 	res.Data = returnRes
-	res.Msg = ""
+	res.Msg = "success"
 	c.Data["json"] = res
 	c.ServeJSON()
 }
