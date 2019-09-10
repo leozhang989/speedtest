@@ -31,7 +31,7 @@ func (c *CronController) Refresh() {
 	//获取符合条件的支付凭证
 	now := time.Now().Unix()
 	timeConditon := now - 3600 * 12
-	queryCondition := map[string]string{"pay_status":"1", "updated__gte":strconv.FormatInt(timeConditon,10)}
+	queryCondition := map[string]string{"pay_status":"1", "updated__lte":strconv.FormatInt(timeConditon,10)}
 	queryFields := []string{}
 	orderBy := []string{"asc"}
 	sortBy := []string{"updated"}
