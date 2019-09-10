@@ -56,7 +56,7 @@ func GetOrdersByDeviceCode(deviceCode string) (v *Orders, err error) {
 // GetAllOrders retrieves all Orders matches certain condition. Returns empty list if
 // no records exist
 func GetAllOrders(query map[string]string, fields []string, sortby []string, order []string,
-	offset int64, limit int64) (ml []interface{}, err error) {
+	offset int64, limit int64, groupby []string) (ml []interface{}, err error) {
 	o := orm.NewOrm()
 	qs := o.QueryTable(new(Orders))
 	// query k=v
@@ -104,11 +104,21 @@ func GetAllOrders(query map[string]string, fields []string, sortby []string, ord
 		}
 	}
 
+	// groupby v1,v2,v3...
+	var groupFields []string
+	if len(groupby) != 0 {
+		for _, v := range groupby {
+			groupFields = append(sortFields, v)
+		}
+		qs = qs.GroupBy(groupFields...)
+	}
+
 	var l []Orders
 	qs = qs.OrderBy(sortFields...).RelatedSel()
 	if limit != 0 {
 		qs = qs.Limit(limit, offset)
 	}
+
 	if _, err = qs.All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {

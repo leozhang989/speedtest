@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	_ "github.com/go-sql-driver/mysql"
 	_ "speedtest/routers"
@@ -20,6 +21,9 @@ func main() {
 		//fmt.Println(dberror)
 		panic(dbInfo)
 	}
+
+	logs.SetLogger(logs.AdapterFile, `{"filename":"logs/debug.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10,"color":true}`)
+	logs.EnableFuncCallDepth(true)
 
 	beego.Run()
 }

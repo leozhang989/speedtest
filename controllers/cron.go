@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"speedtest/models"
 	"strconv"
@@ -35,7 +36,7 @@ func (c *CronController) Refresh() {
 	orderBy := []string{"asc"}
 	sortBy := []string{"updated"}
 
-	orders, err := models.GetAllOrders(queryCondition, queryFields, sortBy, orderBy, 0, 0)
+	orders, err := models.GetAllOrders(queryCondition, queryFields, sortBy, orderBy, 0, 0, nil)
 	if err != nil {
 		fmt.Println(err)
 		panic("")
@@ -48,40 +49,44 @@ func (c *CronController) Refresh() {
 		//a := reflect.TypeOf(order) 查看数据类型 然后断言之后进行赋值
 		//接口取出的数据首先进行类型断言
 		order = orderOri.(models.Orders)
-		//如果已经被前面的更新过则不再更新
-		//if order.Updated >= uint64(now) {
-		//	continue
-		//}
+
+		//如果已经被前面的更新过则不再更新 检查更新时间
+		checkStatus := CheckUpdatedTime(now, order)
+		if !checkStatus {
+			continue
+		}
 
 		res, err := DealAppleOrder(order.LatestReceipt)
+		//logs.Info("【定时任务】苹果接口返回错误记录：订单id是%v，错误是%s，返回的结果是%s", order.Id, err, res)
 		if err != nil || len(res) == 0 {
 			//记录错误日志
-			fmt.Println(err)
+			logs.Info("【定时任务】苹果接口返回错误记录：订单id是%v，错误是%s，返回的结果是%s", order.Id, err, res)
+			//fmt.Println(err)
 		}
 
 		o := orm.NewOrm()
 		ormerr := o.Begin()
 		var doerrs error
-		//更新会员到期时间和LatestReceipt
+		//更新会员到期时间和LatestReceipt 通过OriginalTransactionId批量更新
 		var user models.Users
 		expiresDateS, _ :=strconv.ParseUint(res["expiresDateS"], 10, 64)
-		user.Id = order.Id
+		user.OriginalTransactionId = res["originalTransactionId"]
 		user.VipExpirationTime = expiresDateS
 		user.Updated = uint64(now)
-		doerrs = models.UpdateUsersById(&user)
+		_, doerrs = models.UpdateUserInfoByOtid(&user)
+
 
 		//更新订单表的最近凭证
-		var orderm models.Orders
-		orderm.LatestReceipt = res["latestReceipt"]
+		order.LatestReceipt = res["latestReceipt"]
+		order.Updated = uint64(now)
+		orderErr := models.UpdateOrdersById(&order)
 
-		if doerrs != nil || ormerr != nil {
+		if doerrs != nil || ormerr != nil || orderErr != nil {
 			ormerr = o.Rollback()
+			fmt.Println("error")
 		}else {
 			ormerr = o.Commit()
 			fmt.Println("success")
 		}
-
 	}
-
-
 }

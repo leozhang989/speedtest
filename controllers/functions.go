@@ -24,7 +24,7 @@ func DealAppleOrder(LatestReceipt string) (map[string]string, error){
 
 	appleResponseData,err := HttpPostJson(appleParams, appleVerifyHost)
 	if err != nil {
-		return nil,errors.New("get result from apple error")
+		return nil,err
 	}
 
 	var appleResponse AppleResult
@@ -83,7 +83,7 @@ func HttpPostJson(requestJsonString string, requestUrl string) ([]byte, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil,errors.New("request error")
+		return nil,err
 	}
 	defer resp.Body.Close()
 
@@ -92,4 +92,17 @@ func HttpPostJson(requestJsonString string, requestUrl string) ([]byte, error) {
 	body,_ := ioutil.ReadAll(resp.Body)
 	//response := map[string]string{"code":strconv.Itoa(statuscode),"body":string(body[:])}
 	return body,nil
+}
+
+//检测订单更新时间
+func CheckUpdatedTime(now int64, order models.Orders) bool{
+	nowOrder,err :=  models.GetOrdersById(order.Id)
+	if err != nil {
+		return false
+	}
+
+	if int64(nowOrder.Updated) >= now {
+		return false
+	}
+	return true
 }

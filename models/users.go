@@ -139,7 +139,7 @@ func GetAllUsers(query map[string]string, fields []string, sortby []string, orde
 	return nil, err
 }
 
-// UpdateUsers updates Users by Id and returns error if
+// UpdateUsersById updates Users by Id and returns error if
 // the record to be updated doesn't exist
 func UpdateUsersById(m *Users) (err error) {
 	o := orm.NewOrm()
@@ -167,6 +167,22 @@ func UpdateUsersByOtid(etime uint64, originalTransactionId string) (num int64, e
 	}
 
 	return num, err
+}
+
+// UpdateUserInfoByOtid updates Users by OriginalTransactionId and returns error if
+// the record to be updated doesn't exist
+func UpdateUserInfoByOtid(m *Users) (num int64, err error) {
+	o := orm.NewOrm()
+	v := Users{OriginalTransactionId: m.OriginalTransactionId}
+	// ascertain id exists in the database
+	if err = o.Read(&v, "original_transaction_id"); err == nil {
+		if num, err := o.QueryTable("users").Filter("original_transaction_id", m.OriginalTransactionId).Update(orm.Params{
+			"vip_expiration_time": m.VipExpirationTime, "updated": m.Updated,
+		}); err == nil{
+			fmt.Println("Number of records updated in database:", num)
+		}
+	}
+	return
 }
 
 // DeleteUsers deletes Users by Id and returns error if
