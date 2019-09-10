@@ -60,7 +60,7 @@ func (c *CronController) Refresh() {
 		//logs.Info("【定时任务】苹果接口返回错误记录：订单id是%v，错误是%s，返回的结果是%s", order.Id, err, res)
 		if err != nil || len(res) == 0 {
 			//记录错误日志
-			logs.Info("【定时任务】苹果接口返回错误记录：订单id是%v，错误是%s，返回的结果是%s", order.Id, err, res)
+			logs.Info("【定时任务】苹果接口返回错误记录：订单id是：%v，错误是：%s，返回的结果是：%s", order.Id, err, res)
 			continue
 			//fmt.Println(err)
 		}

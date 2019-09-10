@@ -57,7 +57,9 @@ func DealAppleOrder(LatestReceipt string) (map[string]string, error){
 				originalTransactionId := lastestOrder.Original_transaction_id
 				//userInfos, _ := models.GetUsersByOtid(originalTransactionId)
 				now := time.Now().Unix()
-				if string(now * 1000) > lastestOrder.Expires_date_ms {
+				nowMicroS := now * 1000
+				appleVipExpires, _ := strconv.ParseInt(lastestOrder.Expires_date_ms, 10, 64)
+				if nowMicroS > appleVipExpires {
 					return nil, errors.New("续订已过期，请重新购买")
 				}
 
