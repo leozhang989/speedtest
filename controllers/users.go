@@ -14,7 +14,7 @@ type UsersController struct {
 
 type Result struct {
 	Code int
-	Data map[string]string
+	Data map[string]interface{}
 	Msg string
 }
 
@@ -59,7 +59,7 @@ func (c *UsersController) GetOne() {
 	}
 	now := time.Now().Unix()
 	var vipetime string = "已过期"
-	var isvip string = "0"
+	var isvip int = 1
 	if err != nil {
 		//新用户创建
 		var u models.Users
@@ -72,7 +72,7 @@ func (c *UsersController) GetOne() {
 			//c.Data["json"] = err.Error()
 			c.Ctx.Output.SetStatus(202)
 			res.Code = 202
-			res.Data = make(map[string]string)
+			res.Data = make(map[string]interface{})
 			res.Msg = "login failed"
 			c.Data["json"] = res
 			c.ServeJSON()
@@ -82,10 +82,10 @@ func (c *UsersController) GetOne() {
 		//用时间模板  格式化时间戳  时间转化为string，layout必须为 "2006-01-02 15:04:05"
 		vipetime = time.Unix(int64(v.VipExpirationTime), 0).Format("2006-01-02 15:04:05")
 		if now < int64(v.VipExpirationTime) {
-			isvip = "1"
+			isvip = 1
 		}
 	}
-	returnRes := map[string]string{"VipExpirationTime": vipetime, "downloadUrl": downloadUrl, "IsVip": isvip}
+	returnRes := map[string]interface{}{"VipExpirationTime": vipetime, "downloadUrl": downloadUrl, "IsVip": isvip}
 	c.Ctx.Output.SetStatus(200)
 	res.Code = 200
 	res.Data = returnRes

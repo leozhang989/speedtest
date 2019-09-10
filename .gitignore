@@ -8,3 +8,4 @@ main
 go_build_speedtest.exe
 main.exe
 /logs/debug.log
+/logs

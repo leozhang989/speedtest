@@ -17,7 +17,7 @@ type OrdersController struct {
 
 type OrdersResult struct {
 	Code int
-	Data map[string]string
+	Data map[string]interface{}
 	Msg string
 }
 
@@ -69,7 +69,7 @@ func (c *OrdersController) Post() {
 	if len(v.DeviceCode) == 0 || len(v.Certificate) == 0 {
 		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
-		res.Data = make(map[string]string)
+		res.Data = make(map[string]interface{})
 		res.Msg = "wrong params"
 		c.Data["json"] = res
 		c.ServeJSON()
@@ -79,7 +79,7 @@ func (c *OrdersController) Post() {
 	if err != nil || user == nil {
 		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
-		res.Data = make(map[string]string)
+		res.Data = make(map[string]interface{})
 		res.Msg = "用户信息获取失败，请退出APP重试"
 		c.Data["json"] = res
 		c.ServeJSON()
@@ -100,7 +100,7 @@ func (c *OrdersController) Post() {
 	if err != nil {
 		c.Ctx.Output.SetStatus(202)
 		res.Code = 202
-		res.Data = make(map[string]string)
+		res.Data = make(map[string]interface{})
 		res.Msg = "get result from apple error"
 		c.Data["json"] = res
 		c.ServeJSON()
@@ -141,7 +141,7 @@ func (c *OrdersController) Post() {
 				if nowMicroS > appleVipExpires {
 					c.Ctx.Output.SetStatus(202)
 					res.Code = 202
-					res.Data = make(map[string]string)
+					res.Data = make(map[string]interface{})
 					res.Msg = "续订已过期，请重新购买"
 					c.Data["json"] = res
 					c.ServeJSON()
@@ -185,7 +185,7 @@ func (c *OrdersController) Post() {
 					c.Ctx.Output.SetStatus(200)
 					res.Code = 200
 					vipetime := time.Unix(int64(expiresDateS), 0).Format("2006-01-02 15:04:05")
-					dataRes := map[string]string{"IsVip":"1", "VipExpirationTime":vipetime}
+					dataRes := map[string]interface{}{"IsVip":1, "VipExpirationTime":vipetime}
 					res.Data = dataRes
 					res.Msg = "success"
 					c.Data["json"] = res
@@ -197,7 +197,7 @@ func (c *OrdersController) Post() {
 
 	c.Ctx.Output.SetStatus(202)
 	res.Code = 202
-	res.Data = make(map[string]string)
+	res.Data = make(map[string]interface{})
 	res.Msg = "支付失败"
 	c.Data["json"] = res
 	c.ServeJSON()
