@@ -7,3 +7,4 @@ main
 /conf/app.conf
 go_build_speedtest.exe
 main.exe
+/logs/debug.log
