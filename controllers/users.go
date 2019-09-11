@@ -59,7 +59,7 @@ func (c *UsersController) GetOne() {
 	}
 	now := time.Now().Unix()
 	var vipetime string = "已过期"
-	var isvip int = 1
+	var isvip int = 0
 	if err != nil {
 		//新用户创建
 		var u models.Users
