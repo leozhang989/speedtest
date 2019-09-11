@@ -16,4 +16,10 @@ func init() {
 
 	// cron定时任务
 	beego.Router("/cron/refresh-vip/:token", &controllers.CronController{}, "get:Refresh")
+
+	//policy页面
+	beego.Router("/page/privacy-policy", &controllers.PageController{}, "get:Policy")
+
+	//service页面
+	beego.Router("/page/service", &controllers.PageController{}, "get:Service")
 }
